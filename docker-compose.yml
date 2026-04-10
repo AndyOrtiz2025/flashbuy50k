@@ -1,0 +1,248 @@
+version: '3.8'
+
+networks:
+  flashbuy-net:
+    driver: bridge
+
+services:
+
+  # ─────────────────────────────────
+  # BASES DE DATOS POSTGRESQL (6)
+  # ─────────────────────────────────
+
+  catalog-db:
+    image: postgres:15
+    container_name: catalog-db
+    environment:
+      POSTGRES_DB: catalog_db
+      POSTGRES_USER: flashbuy
+      POSTGRES_PASSWORD: flashbuy123
+    volumes:
+      - ./catalog-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - flashbuy-net
+
+  cart-db:
+    image: postgres:15
+    container_name: cart-db
+    environment:
+      POSTGRES_DB: cart_db
+      POSTGRES_USER: flashbuy
+      POSTGRES_PASSWORD: flashbuy123
+    volumes:
+      - ./cart-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - flashbuy-net
+
+  order-db:
+    image: postgres:15
+    container_name: order-db
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: flashbuy
+      POSTGRES_PASSWORD: flashbuy123
+    volumes:
+      - ./order-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - flashbuy-net
+
+  inventory-db:
+    image: postgres:15
+    container_name: inventory-db
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: flashbuy
+      POSTGRES_PASSWORD: flashbuy123
+    volumes:
+      - ./inventory-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - flashbuy-net
+
+  payment-db:
+    image: postgres:15
+    container_name: payment-db
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: flashbuy
+      POSTGRES_PASSWORD: flashbuy123
+    volumes:
+      - ./payment-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - flashbuy-net
+
+  notification-db:
+    image: postgres:15
+    container_name: notification-db
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: flashbuy
+      POSTGRES_PASSWORD: flashbuy123
+    volumes:
+      - ./notification-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - flashbuy-net
+
+  # ─────────────────────────────────
+  # REDIS (3 instancias)
+  # ─────────────────────────────────
+
+  redis-gateway:
+    image: redis:7
+    container_name: redis-gateway
+    networks:
+      - flashbuy-net
+
+  redis-catalog:
+    image: redis:7
+    container_name: redis-catalog
+    networks:
+      - flashbuy-net
+
+  redis-inventory:
+    image: redis:7
+    container_name: redis-inventory
+    networks:
+      - flashbuy-net
+
+  # ─────────────────────────────────
+  # KAFKA + ZOOKEEPER
+  # ─────────────────────────────────
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - flashbuy-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+    networks:
+      - flashbuy-net
+
+  # ─────────────────────────────────
+  # MICROSERVICIOS (placeholders)
+  # ─────────────────────────────────
+
+  catalog-service:
+    build: ./catalog-service
+    container_name: catalog-service
+    depends_on:
+      - catalog-db
+      - redis-catalog
+      - kafka
+    environment:
+      DB_URL: jdbc:postgresql://catalog-db:5432/catalog_db
+      DB_USER: flashbuy
+      DB_PASS: flashbuy123
+      REDIS_HOST: redis-catalog
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - flashbuy-net
+
+  cart-service:
+    build: ./cart-service
+    container_name: cart-service
+    depends_on:
+      - cart-db
+      - redis-inventory
+      - kafka
+    environment:
+      DB_URL: jdbc:postgresql://cart-db:5432/cart_db
+      DB_USER: flashbuy
+      DB_PASS: flashbuy123
+      REDIS_HOST: redis-inventory
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - flashbuy-net
+
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    depends_on:
+      - order-db
+      - kafka
+    environment:
+      DB_URL: jdbc:postgresql://order-db:5432/order_db
+      DB_USER: flashbuy
+      DB_PASS: flashbuy123
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - flashbuy-net
+
+  inventory-service:
+    build: ./inventory-service
+    container_name: inventory-service
+    depends_on:
+      - inventory-db
+      - redis-inventory
+      - kafka
+    environment:
+      DB_URL: jdbc:postgresql://inventory-db:5432/inventory_db
+      DB_USER: flashbuy
+      DB_PASS: flashbuy123
+      REDIS_HOST: redis-inventory
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - flashbuy-net
+
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    depends_on:
+      - payment-db
+      - kafka
+    environment:
+      DB_URL: jdbc:postgresql://payment-db:5432/payment_db
+      DB_USER: flashbuy
+      DB_PASS: flashbuy123
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - flashbuy-net
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    depends_on:
+      - notification-db
+      - kafka
+    environment:
+      DB_URL: jdbc:postgresql://notification-db:5432/notification_db
+      DB_USER: flashbuy
+      DB_PASS: flashbuy123
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - flashbuy-net
+
+  # ─────────────────────────────────
+  # API GATEWAY
+  # ─────────────────────────────────
+
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis-gateway
+      - catalog-service
+      - cart-service
+      - order-service
+      - inventory-service
+      - payment-service
+      - notification-service
+    environment:
+      REDIS_HOST: redis-gateway
+    networks:
+      - flashbuy-net
+      
