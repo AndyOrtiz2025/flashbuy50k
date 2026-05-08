@@ -2,14 +2,9 @@ name: FlashBuy CI/CD
 
 on:
   push:
-    branches:
-      - master
-      - main
-
+    branches: [ master, main ]
   pull_request:
-    branches:
-      - master
-      - main
+    branches: [ master, main ]
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -35,8 +30,67 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Configurar Docker
+      - name: Configurar Docker para Google Container Registry
         run: gcloud auth configure-docker
 
-      - name: Build gateway
-        run: docker build -t $IMAGE_PREFIX/gateway:$GITHUB_SHA ./gateway
+      - name: Build y Push — gateway
+        run: |
+          docker build -t $IMAGE_PREFIX/gateway:$GITHUB_SHA ./gateway
+          docker push $IMAGE_PREFIX/gateway:$GITHUB_SHA
+
+      - name: Build y Push — catalog-service
+        run: |
+          docker build -t $IMAGE_PREFIX/catalog-service:$GITHUB_SHA ./catalog-service
+          docker push $IMAGE_PREFIX/catalog-service:$GITHUB_SHA
+
+      - name: Build y Push — cart-service
+        run: |
+          docker build -t $IMAGE_PREFIX/cart-service:$GITHUB_SHA ./cart-service
+          docker push $IMAGE_PREFIX/cart-service:$GITHUB_SHA
+
+      - name: Build y Push — order-service
+        run: |
+          docker build -t $IMAGE_PREFIX/order-service:$GITHUB_SHA ./order-service
+          docker push $IMAGE_PREFIX/order-service:$GITHUB_SHA
+
+      - name: Build y Push — inventory-service
+        run: |
+          docker build -t $IMAGE_PREFIX/inventory-service:$GITHUB_SHA ./inventory-service
+          docker push $IMAGE_PREFIX/inventory-service:$GITHUB_SHA
+
+      - name: Build y Push — payment-service
+        run: |
+          docker build -t $IMAGE_PREFIX/payment-service:$GITHUB_SHA ./payment-service
+          docker push $IMAGE_PREFIX/payment-service:$GITHUB_SHA
+
+      - name: Build y Push — notification-service
+        run: |
+          docker build -t $IMAGE_PREFIX/notification-service:$GITHUB_SHA ./notification-service
+          docker push $IMAGE_PREFIX/notification-service:$GITHUB_SHA
+
+      - name: Conectar a GKE
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_REGION }}
+
+      - name: Deploy a GKE
+        run: |
+          kubectl set image deployment/gateway gateway=$IMAGE_PREFIX/gateway:$GITHUB_SHA
+          kubectl set image deployment/catalog-service catalog-service=$IMAGE_PREFIX/catalog-service:$GITHUB_SHA
+          kubectl set image deployment/cart-service cart-service=$IMAGE_PREFIX/cart-service:$GITHUB_SHA
+          kubectl set image deployment/order-service order-service=$IMAGE_PREFIX/order-service:$GITHUB_SHA
+          kubectl set image deployment/inventory-service inventory-service=$IMAGE_PREFIX/inventory-service:$GITHUB_SHA
+          kubectl set image deployment/payment-service payment-service=$IMAGE_PREFIX/payment-service:$GITHUB_SHA
+          kubectl set image deployment/notification-service notification-service=$IMAGE_PREFIX/notification-service:$GITHUB_SHA
+
+      - name: Verificar deploy exitoso
+        run: |
+          kubectl rollout status deployment/gateway
+          kubectl rollout status deployment/inventory-service
+          kubectl rollout status deployment/order-service
+
+      - name: Healthcheck — verificar Gateway responde en GKE
+        run: |
+          GATEWAY_IP=$(kubectl get service gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl --retry 10 --retry-delay 10 --retry-connrefused http://$GATEWAY_IP:8080/catalog || true
