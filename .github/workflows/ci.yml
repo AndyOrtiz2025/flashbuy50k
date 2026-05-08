@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout código
+      - name: Checkout codigo
         uses: actions/checkout@v3
 
       - name: Autenticar en Google Cloud
@@ -73,6 +73,14 @@ jobs:
         with:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_REGION }}
+
+      - name: Deploy Kafka a GKE
+        run: |
+          kubectl apply -f k8s/kafka/zookeeper-deployment.yml
+          kubectl apply -f k8s/kafka/kafka-deployment.yml
+          kubectl wait --for=condition=available deployment/zookeeper --timeout=120s
+          kubectl wait --for=condition=available deployment/kafka --timeout=120s
+          kubectl apply -f k8s/kafka/kafka-init-topics.yml
 
       - name: Deploy a GKE
         run: |
