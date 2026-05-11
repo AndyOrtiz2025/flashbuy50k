@@ -22,21 +22,43 @@ public class InventoryController {
     }
 
     @GetMapping("/{productId}")
-    public ResponseEntity<Inventory> getStock(@PathVariable UUID productId) {
-        return ResponseEntity.ok(inventoryService.getByProductId(productId));
+    public ResponseEntity<?> getStock(@PathVariable UUID productId) {
+        try {
+            return ResponseEntity.ok(inventoryService.getByProductId(productId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PostMapping("/reserve")
-    public ResponseEntity<Inventory> reserve(@RequestBody Map<String, Object> body) {
-        UUID productId = UUID.fromString(body.get("product_id").toString());
-        int quantity = Integer.parseInt(body.get("quantity").toString());
-        return ResponseEntity.ok(inventoryService.reserveStock(productId, quantity));
+    public ResponseEntity<?> reserve(@RequestBody Map<String, Object> body) {
+        try {
+            UUID productId = UUID.fromString(body.get("product_id").toString());
+            int quantity = Integer.parseInt(body.get("quantity").toString());
+            return ResponseEntity.ok(inventoryService.reserveStock(productId, quantity));
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("LOCK_BUSY")) {
+                return ResponseEntity.status(423)
+                    .body(Map.of("error", "LOCK_BUSY", "message", e.getMessage()));
+            }
+            if (e.getMessage().contains("INSUFFICIENT_STOCK")) {
+                return ResponseEntity.status(409)
+                    .body(Map.of("error", "INSUFFICIENT_STOCK", "message", e.getMessage()));
+            }
+            return ResponseEntity.status(500)
+                .body(Map.of("error", "INTERNAL_ERROR", "message", e.getMessage()));
+        }
     }
 
     @PostMapping("/release")
-    public ResponseEntity<Inventory> release(@RequestBody Map<String, Object> body) {
-        UUID productId = UUID.fromString(body.get("product_id").toString());
-        int quantity = Integer.parseInt(body.get("quantity").toString());
-        return ResponseEntity.ok(inventoryService.releaseStock(productId, quantity));
+    public ResponseEntity<?> release(@RequestBody Map<String, Object> body) {
+        try {
+            UUID productId = UUID.fromString(body.get("product_id").toString());
+            int quantity = Integer.parseInt(body.get("quantity").toString());
+            return ResponseEntity.ok(inventoryService.releaseStock(productId, quantity));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(500)
+                .body(Map.of("error", "INTERNAL_ERROR", "message", e.getMessage()));
+        }
     }
 }

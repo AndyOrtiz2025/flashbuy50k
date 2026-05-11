@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   catalog-db:
@@ -79,6 +77,12 @@ services:
     volumes:
       - notification-db-data:/var/lib/postgresql/data
       - ./notification-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis-inventory:
+    image: redis:7
+    container_name: redis-inventory
+    ports:
+      - "6379:6379"
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
