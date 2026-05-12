@@ -1,4 +1,4 @@
-package com.flashbuy.cart;
+package com.flashbuy.cart_service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
