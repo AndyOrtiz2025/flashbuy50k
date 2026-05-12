@@ -19,33 +19,25 @@ public class PaymentController {
 
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
-        return ResponseEntity.ok(Map.of("status", "UP", "service", 
-"payment-service"));
+        return ResponseEntity.ok(Map.of("status", "UP", "service", "payment-service"));
     }
 
     @PostMapping("/process")
-    public ResponseEntity<Payment> process(@RequestBody Map<String, 
-Object> body,
-                                            @RequestHeader("X-User-Id") 
-String userId) {
+    public ResponseEntity<Payment> process(@RequestBody Map<String, Object> body,
+                                            @RequestHeader("X-User-Id") String userId) {
+        UUID idempotencyKey = UUID.fromString(body.get("idempotency_key").toString());
 
-        UUID idempotencyKey = 
-UUID.fromString(body.get("idempotency_key").toString());
-
+        // Idempotencia — si ya existe, devuelve el mismo resultado
         return paymentRepository.findByIdempotencyKey(idempotencyKey)
             .map(existing -> ResponseEntity.ok(existing))
             .orElseGet(() -> {
                 Payment payment = new Payment();
-                
-payment.setOrderId(UUID.fromString(body.get("order_id").toString()));
+                payment.setOrderId(UUID.fromString(body.get("order_id").toString()));
                 payment.setUserId(UUID.fromString(userId));
                 payment.setIdempotencyKey(idempotencyKey);
-                payment.setAmount(new 
-BigDecimal(body.get("amount").toString()));
-                payment.setStatus("APPROVED");
-
-                return 
-ResponseEntity.status(201).body(paymentRepository.save(payment));
+                payment.setAmount(new BigDecimal(body.get("amount").toString()));
+                payment.setStatus("APPROVED"); // Simulado por ahora
+                return ResponseEntity.status(201).body(paymentRepository.save(payment));
             });
     }
 }

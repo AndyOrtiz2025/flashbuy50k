@@ -19,30 +19,24 @@ public class NotificationController {
 
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
-        return ResponseEntity.ok(Map.of("status", "UP", "service", 
-"notification-service"));
+        return ResponseEntity.ok(Map.of("status", "UP", "service", "notification-service"));
     }
 
     @PostMapping("/send")
-    public ResponseEntity<Notification> send(@RequestBody Map<String, 
-Object> body) {
+    public ResponseEntity<Notification> send(@RequestBody Map<String, Object> body) {
         Notification notification = new Notification();
-        
-notification.setUserId(UUID.fromString(body.get("user_id").toString()));
-        
-notification.setOrderId(UUID.fromString(body.get("order_id").toString()));
+        notification.setUserId(UUID.fromString(body.get("user_id").toString()));
+        notification.setOrderId(UUID.fromString(body.get("order_id").toString()));
         notification.setEventSource(body.get("event_source").toString());
         notification.setType(body.get("type").toString());
         notification.setStatus("SENT");
 
-        return 
-ResponseEntity.status(201).body(notificationRepository.save(notification));
+        return ResponseEntity.status(201).body(notificationRepository.save(notification));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Notification>> getByUser(@PathVariable UUID 
-userId) {
-        return 
-ResponseEntity.ok(notificationRepository.findByUserId(userId));
+    public ResponseEntity<List<Notification>> getByUser(@PathVariable UUID userId) {
+        return ResponseEntity.ok(notificationRepository.findByUserId(userId));
     }
 }
+
