@@ -26,3 +26,18 @@ spring:
 app:
   outbox:
     scheduler-delay: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+  endpoint:
+    prometheus:
+      enabled: true
