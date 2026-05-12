@@ -1,4 +1,4 @@
-package com.flashbuy.order.model;
+package com.flashbuy.order_service.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

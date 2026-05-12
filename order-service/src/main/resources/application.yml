@@ -4,13 +4,25 @@ server:
 spring:
   application:
     name: order-service
+
   datasource:
-    url: ${ORDER_DB_URL:jdbc:postgresql://localhost:5433/order_db}
+    url: jdbc:postgresql://localhost:5434/order_db
     username: ${DB_USER:flashbuy}
     password: ${DB_PASS:flashbuy123}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+app:
+  outbox:
+    scheduler-delay: 5000
