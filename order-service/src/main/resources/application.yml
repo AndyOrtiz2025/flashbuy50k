@@ -2,9 +2,6 @@ server:
   port: 8084
 
 spring:
-  application:
-    name: order-service
-
   datasource:
     url: jdbc:postgresql://localhost:5434/order_db
     username: ${DB_USER:flashbuy}
@@ -13,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
