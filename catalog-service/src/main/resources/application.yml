@@ -1,12 +1,11 @@
 server:
-  port: 8082
+  port: 8092
 
 spring:
   application:
     name: catalog-service
 
   datasource:
-    # Cambiamos 5432 por 5440 para que coincida con el docker-compose
     url: jdbc:postgresql://localhost:5432/catalog_db
     username: flashbuy
     password: flashbuy123
@@ -22,10 +21,12 @@ management:
     web:
       exposure:
         include: health,info,prometheus,metrics
+
   metrics:
     export:
       prometheus:
         enabled: true
+
   endpoint:
     prometheus:
       enabled: true
