@@ -32,6 +32,13 @@ public class OrderController {
     @Transactional
     public ResponseEntity<?> confirm(@RequestBody Map<String, Object> body,
                                      @RequestHeader("X-User-Id") String userId) {
+
+        // Validar campos obligatorios
+        if (body.get("idempotency_key") == null || body.get("total_amount") == null) {
+            return ResponseEntity.status(400)
+                .body(Map.of("error", "BAD_REQUEST", "message", "idempotency_key y total_amount son obligatorios"));
+        }
+
         try {
             UUID idempotencyKey = UUID.fromString(body.get("idempotency_key").toString());
 
@@ -64,6 +71,9 @@ public class OrderController {
 
             return ResponseEntity.status(201).body(saved);
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400)
+                .body(Map.of("error", "BAD_REQUEST", "message", "Formato de UUID inválido"));
         } catch (Exception e) {
             return ResponseEntity.status(500)
                 .body(Map.of("error", "INTERNAL_ERROR", "message", e.getMessage()));
